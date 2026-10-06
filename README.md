@@ -11,6 +11,7 @@
 **blgpu** is a hardware-accelerated 2D UI framework designed for Blender addon developers. It enables rich, fluid, pixel-perfect custom UI widgets (rotary knobs, bezier curve editors, gradient ramps, vector pads, orbit spheres, interactive color wheels) directly inside Blender's 3D Viewport Sidebar (N-Panel).
 
 ---
+<img width="1919" height="1016" alt="image" src="https://github.com/user-attachments/assets/9f1b6515-f09b-4406-8cb7-7f33b41e34ed" />
 
 ## ✨ Main Features
 
