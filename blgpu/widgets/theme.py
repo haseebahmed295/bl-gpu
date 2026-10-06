@@ -21,9 +21,9 @@ class BlenderTheme:
     # Panel / Window Background (Matches N-Panel sidebar)
     BG_PANEL = (0.18, 0.18, 0.18, 1.0)            # #2e2e2e
 
-    # Borders & Outlines
-    BORDER_DARK = (0.09, 0.09, 0.09, 1.0)         # #171717
-    BORDER_LIGHT = (0.32, 0.32, 0.32, 1.0)        # #525252
+    # Borders & Outlines (Subtle 1px border matching native Blender buttons)
+    BORDER_DARK = (0.13, 0.13, 0.13, 1.0)         # #212121 - Subtle native button border
+    BORDER_LIGHT = (0.35, 0.35, 0.35, 1.0)        # #595959
     BORDER_FOCUS = (0.278, 0.447, 0.702, 1.0)     # Focus outline
 
     # Typography

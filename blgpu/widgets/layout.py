@@ -23,6 +23,23 @@ class UIColumn(UIElement):
         """Remove all children."""
         self.children.clear()
 
+    def get_total_height(self) -> float:
+        """Returns the total vertical height of all contained elements including margins."""
+        from .theme import BlenderTheme
+        scale = BlenderTheme.get_ui_scale()
+        pad_top = self.padding_top * scale
+        spacing = self.spacing * scale
+        total = pad_top
+        for child in self.children:
+            if getattr(child, "visible", True):
+                if hasattr(child, "get_total_height"):
+                    h = child.get_total_height()
+                else:
+                    base_h = getattr(child, "base_height", getattr(child, "height", 24.0))
+                    h = base_h * scale
+                total += h + spacing
+        return total
+
     def update_layout(self, panel_w, panel_h):
         """
         Recalculates child positions from top-down relative to panel (0, 0),

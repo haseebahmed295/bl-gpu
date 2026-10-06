@@ -7,6 +7,9 @@ class UIButton(UIElement):
     def __init__(
         self,
         text="Button",
+        icon=None,
+        icon_size=12,
+        icon_stroke=1.0,
         x=0,
         y=0,
         width=120,
@@ -18,6 +21,9 @@ class UIButton(UIElement):
     ):
         super().__init__(x=x, y=y, width=width, height=height)
         self.text = text
+        self.icon = icon
+        self.icon_size = icon_size
+        self.icon_stroke = icon_stroke
         self.on_click = on_click
         
         # Color Styling via BlenderTheme
@@ -64,11 +70,27 @@ class UIButton(UIElement):
         # 2. Draw Subtle Rounded Border
         self.draw_rounded_rect_outline(abs_x, abs_y, self.width, self.height, self.corner_radius, self.border_color, line_width=self.border_width)
 
-        # 3. Calculate Centered Text Position
-        available_txt_w = max(10, self.width - 10)
-        tw, th = self.get_text_dimensions(self.text, font_id=0, size=self.font_size)
-        tx = abs_x + max(5.0, (self.width - tw) / 2.0)
-        ty = abs_y + (self.height - th) / 2.0 + 1.0
+        scale = BlenderTheme.get_ui_scale()
 
-        # 4. Draw Label
-        self.draw_text(self.text, tx, ty, font_id=0, size=self.font_size, color=txt_color, max_width=available_txt_w)
+        # 3. Calculate Layout for Icon and Text
+        icon_display_size = (self.icon_size + 2.0) * scale if self.icon else 0.0
+        icon_spacing = 6.0 * scale if (self.icon and self.text) else 0.0
+
+        tw, th = self.get_text_dimensions(self.text, font_id=0, size=self.font_size) if self.text else (0.0, 0.0)
+        total_content_w = icon_display_size + icon_spacing + tw
+        
+        start_x = abs_x + max(4.0, (self.width - total_content_w) / 2.0)
+
+        # Draw icon
+        if self.icon:
+            from .icon import UIIcon
+            icon_cx = start_x + icon_display_size * 0.5
+            icon_cy = abs_y + self.height * 0.5
+            UIIcon.draw_vector_icon(self.icon, icon_cx, icon_cy, size=self.icon_size, color=txt_color, stroke_width=self.icon_stroke)
+
+        # Draw text
+        if self.text:
+            tx = start_x + icon_display_size + icon_spacing
+            ty = abs_y + (self.height - th) / 2.0 + 1.0
+            available_txt_w = max(10, self.width - (tx - abs_x) - 4.0)
+            self.draw_text(self.text, tx, ty, font_id=0, size=self.font_size, color=txt_color, max_width=available_txt_w)

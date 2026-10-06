@@ -1,5 +1,6 @@
 from .base import UIElement
 from .theme import BlenderTheme
+from .shapes import GpuShapes
 
 class UICheckbox(UIElement):
     """Interactive toggle checkbox element styled to match Blender's native checkboxes."""
@@ -16,11 +17,13 @@ class UICheckbox(UIElement):
         border_width=None,
         border_color=None,
         border_hover_color=None,
+        check_style="BOX",
         on_change=None
     ):
         super().__init__(x=x, y=y, width=width, height=height)
         self.text = text
         self.value = bool(default_value)
+        self.check_style = check_style
         self.on_change = on_change
 
         # Styling
@@ -53,15 +56,33 @@ class UICheckbox(UIElement):
         box_y = abs_y + (self.height - box_size) / 2.0
         border_col = self.color_box_border_hover if self.hovered else self.color_box_border
 
-        # 1. Outer Box (Rounded)
-        self.draw_rounded_rect(abs_x, box_y, box_size, box_size, self.corner_radius, self.color_box_bg)
-        self.draw_rounded_rect_outline(abs_x, box_y, box_size, box_size, self.corner_radius, border_col, line_width=self.border_width)
+        # 1. Outer Box (Anti-aliased custom SDF rounded box with crisp border in single pass)
+        scaled_radius = self.corner_radius * scale
+        scaled_border = max(1.0, self.border_width * scale)
+        GpuShapes.draw_smooth_rounded_box(
+            abs_x, box_y, box_size, box_size,
+            radius=scaled_radius,
+            fill_color=self.color_box_bg,
+            border_color=border_col,
+            border_width=scaled_border
+        )
 
-        # 2. Check Indicator (Rounded inner fill)
+        # 2. Check Indicator (Anti-aliased custom SDF fill or vector check)
         if self.value:
             margin = 2.5 * scale
             check_size = box_size - (margin * 2.0)
-            self.draw_rounded_rect(abs_x + margin, box_y + margin, check_size, check_size, 2.0, self.color_check)
+            if self.check_style == "CHECK":
+                p1 = (abs_x + margin + check_size * 0.18, box_y + margin + check_size * 0.45)
+                p2 = (abs_x + margin + check_size * 0.42, box_y + margin + check_size * 0.20)
+                p3 = (abs_x + margin + check_size * 0.82, box_y + margin + check_size * 0.75)
+                GpuShapes.draw_smooth_polyline([p1, p2, p3], self.color_check, line_width=2.0 * scale)
+            else:
+                check_radius = max(1.0, 2.0 * scale)
+                GpuShapes.draw_smooth_rounded_box(
+                    abs_x + margin, box_y + margin, check_size, check_size,
+                    radius=check_radius,
+                    fill_color=self.color_check
+                )
 
         # 3. Label text beside the box
         label_x = abs_x + box_size + (8.0 * scale)

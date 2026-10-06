@@ -122,9 +122,21 @@ class UIElement:
         scale = BlenderTheme.get_ui_scale()
 
         if isinstance(radius, (int, float)):
-            r_tr = r_tl = r_bl = r_br = float(radius) * scale
+            scaled_radius = float(radius) * scale
         else:
-            r_tr, r_tl, r_bl, r_br = [float(val) * scale for val in radius]
+            scaled_radius = [float(val) * scale for val in radius]
+
+        try:
+            from .shapes import GpuShapes
+            GpuShapes.draw_smooth_rounded_rect(x, y, w, h, scaled_radius, color)
+        except Exception:
+            self._draw_rounded_rect_polygonal(x, y, w, h, scaled_radius, color)
+
+    def _draw_rounded_rect_polygonal(self, x, y, w, h, radius, color):
+        if isinstance(radius, (int, float)):
+            r_tr = r_tl = r_bl = r_br = float(radius)
+        else:
+            r_tr, r_tl, r_bl, r_br = [float(val) for val in radius]
 
         max_r = min(w / 2.0, h / 2.0)
         r_tr = min(r_tr, max_r)
@@ -134,12 +146,8 @@ class UIElement:
 
         import math
         segments = 16
-        aa_fringe = 1.0
 
         inner_pts = []
-
-        # 4 Corner Arcs ordered counter-clockwise:
-        # Top-Right, Top-Left, Bottom-Left, Bottom-Right
         corner_defs = [
             (x + w - r_tr, y + h - r_tr, r_tr, 0.0, 0.5 * math.pi),
             (x + r_tl,     y + h - r_tl, r_tl, 0.5 * math.pi, math.pi),
@@ -157,7 +165,6 @@ class UIElement:
                     sin_t = math.sin(theta)
                     inner_pts.append((cx + r_c * cos_t, cy + r_c * sin_t))
 
-        # Draw solid rounded polygon using UNIFORM_COLOR
         center = (x + w / 2.0, y + h / 2.0)
         core_verts = [center] + inner_pts
         core_indices = []
@@ -178,26 +185,35 @@ class UIElement:
         from .theme import BlenderTheme
         scale = BlenderTheme.get_ui_scale()
 
-        scaled_radius = radius * scale
+        if isinstance(radius, (int, float)):
+            scaled_radius = float(radius) * scale
+        else:
+            scaled_radius = [float(val) * scale for val in radius]
+
         scaled_line_width = max(1.0, line_width * scale)
 
-        r = min(scaled_radius, w / 2.0, h / 2.0)
+        try:
+            from .shapes import GpuShapes
+            GpuShapes.draw_smooth_rounded_rect_outline(x, y, w, h, scaled_radius, color, line_width=scaled_line_width)
+        except Exception:
+            self._draw_rounded_rect_outline_polygonal(x, y, w, h, scaled_radius, color, scaled_line_width)
+
+    def _draw_rounded_rect_outline_polygonal(self, x, y, w, h, scaled_radius, color, scaled_line_width):
+        r = min(scaled_radius if isinstance(scaled_radius, (int, float)) else min(scaled_radius), w / 2.0, h / 2.0)
         if r <= 0.5:
             self.draw_rect_outline(x, y, w, h, color, line_width=scaled_line_width)
             return
 
         import math
         segments = 16
-        
-        # Border stroke sits on the outer perimeter and extends inward by scaled_line_width
         r_outer = r
         r_inner = max(0.0, r - scaled_line_width)
 
         corners = [
-            (x + w - r, y + h - r, 0.0, 0.5 * math.pi),       # Top-Right
-            (x + r,     y + h - r, 0.5 * math.pi, math.pi),   # Top-Left
-            (x + r,     y + r,     math.pi, 1.5 * math.pi),   # Bottom-Left
-            (x + w - r, y + r,     1.5 * math.pi, 2.0 * math.pi), # Bottom-Right
+            (x + w - r, y + h - r, 0.0, 0.5 * math.pi),
+            (x + r,     y + h - r, 0.5 * math.pi, math.pi),
+            (x + r,     y + r,     math.pi, 1.5 * math.pi),
+            (x + w - r, y + r,     1.5 * math.pi, 2.0 * math.pi),
         ]
 
         outer_pts = []
@@ -218,7 +234,6 @@ class UIElement:
         for i in range(n):
             next_i = (i + 1) % n
             base_idx = len(verts)
-            # Quad ribbon: inner_i, outer_i, outer_next, inner_next
             verts.extend([inner_pts[i], outer_pts[i], outer_pts[next_i], inner_pts[next_i]])
             indices.extend([
                 (base_idx, base_idx + 1, base_idx + 2),
